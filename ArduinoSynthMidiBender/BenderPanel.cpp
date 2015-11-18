@@ -5,6 +5,7 @@
 #include "Arduino.h"
 #include "flagMessaging.h"
 
+
 BenderPanel::BenderPanel( void )
 {
 	//Controls
@@ -82,15 +83,40 @@ void BenderPanel::processMachine( void )
 	//Do small machines
 	if( downButton.serviceRisingEdge() )
 	{
-
+		if( settings.selectedSetting > 8 )
+		{
+			settings.selectedSetting--;
+		}
+		else
+		{
+			settings.selectedSetting = 16;
+		}
+		newStatusFlag.setFlag();
+	}
+	else
+	{
+		newStatusFlag.clearFlag();
 	}
 	if( upButton.serviceRisingEdge() )
 	{
-
+		if( settings.selectedSetting < 16 )
+		{
+			settings.selectedSetting++;
+		}
+		else
+		{
+			settings.selectedSetting = 8;
+		}
+		newStatusFlag.setFlag();
+	}
+	else
+	{
+		newStatusFlag.clearFlag();
 	}
 	if( option1Button.serviceRisingEdge() )
 	{
-
+		//Check if setting available
+		
 	}
 	if( option2Button.serviceRisingEdge() )
 	{
@@ -101,16 +127,22 @@ void BenderPanel::processMachine( void )
 		
 	}
 
+	if( leftSelector.serviceChanged() )
+	{
+		leftKnobPosition = leftSelector.getState();
+		displayMode = 2;
+	}
+	if(( rightKnob.getState() > rightKnobPosition + 5 )||( rightKnob.getState() < rightKnobPosition - 5 ))
+	{
+		rightKnobPosition = rightKnob.getState();
+		displayMode = 3;
+	}
 	if( selector.serviceChanged() )
 	{
 		selectorPosition = selector.getState();
-	}
-	if( leftKnob.serviceChanged() )
-	{
-		leftKnobPosition = leftKnob.getState();
-	}
-	rightKnobPosition = rightKnob.getState();
 
+	}
+	
 	//Do main machine
 	tickStateMachine();
 	
@@ -126,17 +158,6 @@ void BenderPanel::processMachine( void )
 	
 	//-- Select the correct 7 segment sources here --//
 
-	//Default modes
-	displayMode = 0;
-
-	if( 1 )
-	{
-		displayMode = 0;
-	}
-	else
-	{
-		displayMode = 0;
-	}
 
 	//Make displays
 	display.setState( SSON );
@@ -144,13 +165,23 @@ void BenderPanel::processMachine( void )
 	{
 		case 0:  //Channel is song number
 			display.setData("h");
+			//sprintf(tempString, "%4d", (unsigned int)settings.selectedSetting);
+			//display.setData(tempString);
 		break;
-		case 1:  //Display knob
+		case 1:  //Display selector
 		    sprintf(tempString, "%4d", (unsigned int)selectorPosition);
+			tempString[0] = '-';
+			tempString[1] = tempString[2];
+			tempString[2] = tempString[3];
+			tempString[3] = '-';
 			display.setData(tempString);
 		break;
-		case 2:  //Display knob
+		case 2:  //Display left knob
 		    sprintf(tempString, "%4d", (unsigned int)leftKnobPosition);
+			display.setData(tempString);
+		break;
+		case 3:  //Display right knob
+		    sprintf(tempString, "%4d", (unsigned int)rightKnobPosition);
 			display.setData(tempString);
 		break;
 		default:
@@ -171,8 +202,44 @@ void BenderPanel::tickStateMachine()
 		nextState = PIdle;
 		break;
 	case PIdle:
+		if( newStatusFlag.serviceRisingEdge() )
+		{
+			nextState = PNewStatus;
+			
+			//sprintf(tempString, "%4d", (unsigned int)settings.selectedSetting);
+			if( settings.selectedSetting > 15 )
+			{
+				tempString[0] = ' ';
+				tempString[1] = 'A';
+				tempString[2] = 'L';
+				tempString[3] = 'L';
+			}
+			else
+			{
+				tempString[0] = ' ';
+				tempString[1] = ' ';
+				if( settings.selectedSetting > 9 )
+				{
+					tempString[2] = 55 + settings.selectedSetting;
+				}
+				else
+				{
+					tempString[2] = 48 + settings.selectedSetting;
+				}
+				tempString[3] = 'h';
+			}
+			display.peekThrough( tempString, 1500 ); // 'data' type, time in ms to persist
+			
+			displayMode = 1; //show knob
+		}
         break;
-    default:
+	case PNewStatus:
+		nextState = PIdle;
+        break;
+	case PNewSelector:
+		nextState = PIdle;
+        break;
+	default:
         nextState = PInit;
         break;
     }

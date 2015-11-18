@@ -5,7 +5,7 @@
 
 struct statusByteSettings
 {
-	uint8_t modifableMask;
+	uint8_t modifiableMask;
 	uint8_t modifiedMask;
 	uint8_t value1;
 	uint8_t value2;
@@ -13,8 +13,8 @@ struct statusByteSettings
 
 class DeviceSettings
 {
-	DeviceSettings( void );
 public:
+	DeviceSettings( void );
 	statusByteSettings stat8;
 	statusByteSettings stat9;
 	statusByteSettings statA;
@@ -23,6 +23,8 @@ public:
 	statusByteSettings statD;
 	statusByteSettings statE;
 	statusByteSettings statF;
-}
+	statusByteSettings statGlobal;
+	uint8_t selectedSetting;
+};
 
 #endif

@@ -96,7 +96,7 @@ void setup()
 {
 	for(int i = 0; i < 16; i++)
 	{
-		messagePassThroughTable[i] = 1;
+		//messagePassThroughTable[i] = 1;
 	}
 	//Initialize serial:
 	//Serial.begin(9600);

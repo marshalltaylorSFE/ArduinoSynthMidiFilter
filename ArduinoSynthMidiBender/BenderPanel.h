@@ -8,11 +8,14 @@
 #include "PanelComponents.h"
 #include "Panel.h"
 #include "flagMessaging.h"
+#include "BenderSettings.h"
 
 enum PStates
 {
 	PInit,
 	PIdle,
+	PNewStatus,
+	PNewSelector,
 
 };
 
@@ -54,10 +57,14 @@ public:
 private:
 	//Internal Flags
 	//  ..and data
-
+	MessagingFlag newStatusFlag;
+	MessagingFlag newLeftKnob;
+	MessagingFlag newRightKnob;
+	
 	//State machine stuff  
 	PStates state;
-
+	DeviceSettings settings;
+	
 };
 
 #endif

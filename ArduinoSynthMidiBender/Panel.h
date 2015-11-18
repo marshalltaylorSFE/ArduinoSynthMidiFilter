@@ -25,7 +25,9 @@ public:
 	PanelLed option3Led;
 
 	PanelSelector selector;
-	PanelSelector leftKnob;
+	PanelSelector leftSelector;
+	PanelSelector rightSelector;
+	PanelKnob8Bit leftKnob;
 	PanelKnob8Bit rightKnob;
 	
 	char tempString[10];  // Will be used with sprintf to create strings

@@ -10,7 +10,7 @@ DeviceSettings::DeviceSettings( void )
 	statD.modifiableMask = 0x07;
 	statE.modifiableMask = 0x07;
 	statF.modifiableMask = 0x27;
-    globalstat.modifiableMask = 0x37;
+    statGlobal.modifiableMask = 0x37;
 	
 	stat8.modifiedMask = 0;
 	stat9.modifiedMask = 0;
@@ -20,6 +20,8 @@ DeviceSettings::DeviceSettings( void )
 	statD.modifiedMask = 0;
 	statE.modifiedMask = 0;
 	statF.modifiedMask = 0;	
-	globalstat.modifiedMask = 0;
+	statGlobal.modifiedMask = 0;
+	
+	selectedSetting = 0x10;
 	
 }
