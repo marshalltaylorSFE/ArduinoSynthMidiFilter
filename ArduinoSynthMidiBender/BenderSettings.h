@@ -15,6 +15,10 @@ class DeviceSettings
 {
 public:
 	DeviceSettings( void );
+	void setCurrentStatus( uint8_t );
+	statusByteSettings * getCurrentStatusPtr( void );
+	uint8_t getCurrentStatus( void );
+	
 	statusByteSettings stat8;
 	statusByteSettings stat9;
 	statusByteSettings statA;
@@ -24,7 +28,10 @@ public:
 	statusByteSettings statE;
 	statusByteSettings statF;
 	statusByteSettings statGlobal;
-	uint8_t selectedSetting;
+	uint8_t currentStatus;
+	statusByteSettings * currentStatusSettingsPtr;
+	uint8_t editing;
+
 };
 
 #endif

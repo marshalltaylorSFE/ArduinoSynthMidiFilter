@@ -4,7 +4,9 @@
 #include "Panel.h"
 #include "Arduino.h"
 #include "flagMessaging.h"
+#include "BenderSettings.h"
 
+#define KNOBDELTADETECT 5  //5 units of 255 for knob change detect
 
 BenderPanel::BenderPanel( void )
 {
@@ -80,16 +82,18 @@ void BenderPanel::reset( void )
 //---------------------------------------------------------------------------//
 void BenderPanel::processMachine( void )
 {
+	statusByteSettings * currentStatusObject = settings.getCurrentStatusPtr();
+	
 	//Do small machines
 	if( downButton.serviceRisingEdge() )
 	{
-		if( settings.selectedSetting > 8 )
+		if( settings.getCurrentStatus() > 8 )
 		{
-			settings.selectedSetting--;
+			settings.setCurrentStatus( settings.getCurrentStatus() - 1 );
 		}
 		else
 		{
-			settings.selectedSetting = 16;
+			settings.setCurrentStatus( 16 );
 		}
 		newStatusFlag.setFlag();
 	}
@@ -99,13 +103,13 @@ void BenderPanel::processMachine( void )
 	}
 	if( upButton.serviceRisingEdge() )
 	{
-		if( settings.selectedSetting < 16 )
+		if( settings.getCurrentStatus() < 16 )
 		{
-			settings.selectedSetting++;
+			settings.setCurrentStatus( settings.getCurrentStatus() + 1 );
 		}
 		else
 		{
-			settings.selectedSetting = 8;
+			settings.setCurrentStatus( 8 );
 		}
 		newStatusFlag.setFlag();
 	}
@@ -113,33 +117,81 @@ void BenderPanel::processMachine( void )
 	{
 		newStatusFlag.clearFlag();
 	}
+
+	uint8_t editChanged = 0;
 	if( option1Button.serviceRisingEdge() )
 	{
-		//Check if setting available
+		if( settings.editing == 1 )
+		{
+			settings.editing = 0;
+			option1Led.setState( LEDOFF );
+		}
+		else
+		{
+			settings.editing = 1;
+			option1Led.setState( LEDFLASHING );
+		}
+
 		
-	}
+	}	
+	//Check conditions on new input from ANY option parameter, decide what to do later
+	uint8_t parameterChanged = 0;
 	if( option2Button.serviceRisingEdge() )
 	{
-		
+		parameterChanged++;
+		option2Led.setState( LEDOFF );
 	}
 	if( option3Button.serviceRisingEdge() )
 	{
-		
+		parameterChanged++;
+		option3Led.setState( LEDOFF );
 	}
 
 	if( leftSelector.serviceChanged() )
 	{
-		leftKnobPosition = leftSelector.getState();
-		displayMode = 2;
+		parameterChanged++;
+		leftSelectorPosition = leftSelector.getState();
+		//displayMode = 2;
 	}
-	if(( rightKnob.getState() > rightKnobPosition + 5 )||( rightKnob.getState() < rightKnobPosition - 5 ))
+	if( rightSelector.serviceChanged() )
 	{
+		parameterChanged++;
+		rightSelectorPosition = rightSelector.getState();
+		//displayMode = 2;
+	}
+	if(( leftKnob.getState() > leftKnobPosition + KNOBDELTADETECT )||( leftKnob.getState() < rightKnobPosition - KNOBDELTADETECT ))
+	{
+		parameterChanged++;
+		leftKnobPosition = leftKnob.getState();
+		//displayMode = 3;
+	}
+	if(( rightKnob.getState() > rightKnobPosition + KNOBDELTADETECT )||( rightKnob.getState() < rightKnobPosition - KNOBDELTADETECT ))
+	{
+		parameterChanged++;
 		rightKnobPosition = rightKnob.getState();
 		displayMode = 3;
+	}	
+	
+	if( editChanged )
+	{
+		//Check for state of 'edit'
+		
 	}
+	
 	if( selector.serviceChanged() )
 	{
 		selectorPosition = selector.getState();
+		if( currentStatusObject->modifiableMask & ( 0x01 << selectorPosition ))
+		{
+			//New position to update
+			//Turn off editing LED
+			option1Led.setState( LEDOFF );
+			//set option led
+			if( currentStatusObject->modifiedMask & ( 0x01 << selectorPosition ) )
+			{
+				option2Led.setState( LEDON );
+			}
+		}
 
 	}
 	
@@ -150,11 +202,6 @@ void BenderPanel::processMachine( void )
 	//System level LEDs
 	txLed.setState(serviceTxLed());
 	rxLed.setState(serviceRxLed());
-	
-	//Panel level LEDs
-	option1Led.setState(LEDON);
-	option2Led.setState(LEDON);
-	option3Led.setState(LEDON);
 	
 	//-- Select the correct 7 segment sources here --//
 
@@ -206,8 +253,8 @@ void BenderPanel::tickStateMachine()
 		{
 			nextState = PNewStatus;
 			
-			//sprintf(tempString, "%4d", (unsigned int)settings.selectedSetting);
-			if( settings.selectedSetting > 15 )
+			//sprintf(tempString, "%4d", (unsigned int)settings.getCurrentStatus());
+			if( settings.getCurrentStatus() > 15 )
 			{
 				tempString[0] = ' ';
 				tempString[1] = 'A';
@@ -218,13 +265,13 @@ void BenderPanel::tickStateMachine()
 			{
 				tempString[0] = ' ';
 				tempString[1] = ' ';
-				if( settings.selectedSetting > 9 )
+				if( settings.getCurrentStatus() > 9 )
 				{
-					tempString[2] = 55 + settings.selectedSetting;
+					tempString[2] = 55 + settings.getCurrentStatus();
 				}
 				else
 				{
-					tempString[2] = 48 + settings.selectedSetting;
+					tempString[2] = 48 + settings.getCurrentStatus();
 				}
 				tempString[3] = 'h';
 			}

@@ -49,6 +49,8 @@ public:
 	//  ..and data.
 	uint8_t displayMode;
 	uint8_t selectorPosition;
+	uint8_t leftSelectorPosition;
+	uint8_t rightSelectorPosition;
 	uint8_t leftKnobPosition;
 	uint8_t rightKnobPosition;
 	

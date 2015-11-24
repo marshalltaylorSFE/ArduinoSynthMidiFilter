@@ -10,9 +10,9 @@
 
 #define rxLedPin 6
 #define txLedPin 7
-#define option1LedPin 9
+#define option1LedPin 11
 #define option2LedPin 10
-#define option3LedPin 11
+#define option3LedPin 9
 
 #define selectorPin A2
 #define leftKnobPin A0

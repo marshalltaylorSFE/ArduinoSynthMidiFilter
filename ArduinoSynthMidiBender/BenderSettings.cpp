@@ -21,7 +21,55 @@ DeviceSettings::DeviceSettings( void )
 	statE.modifiedMask = 0;
 	statF.modifiedMask = 0;	
 	statGlobal.modifiedMask = 0;
+
+	currentStatus = 0x10;  //Hardcode default
 	
-	selectedSetting = 0x10;
-	
+}
+
+void DeviceSettings::setCurrentStatus( uint8_t input )
+{
+	currentStatus = input;
+	switch( currentStatus )  //Build lookup
+	{
+		case 8:  // status byte = 8h
+			currentStatusSettingsPtr = &stat8;
+		break;
+		case 9:  //
+			currentStatusSettingsPtr = &stat9;
+		break;
+		case 10:  //
+			currentStatusSettingsPtr = &statA;
+		break;
+		case 11:  //
+			currentStatusSettingsPtr = &statB;
+		break;
+		case 12:  //
+			currentStatusSettingsPtr = &statC;
+		break;
+		case 13:  //
+			currentStatusSettingsPtr = &statD;
+		break;
+		case 14:  //
+			currentStatusSettingsPtr = &statE;
+		break;
+		case 15:  //
+			currentStatusSettingsPtr = &statF;
+		break;
+		case 16:  // Global
+			currentStatusSettingsPtr = &statGlobal;
+		break;
+		default:  //
+			currentStatusSettingsPtr = &statGlobal;
+		break;
+	}
+}
+
+statusByteSettings * DeviceSettings::getCurrentStatusPtr( void )
+{
+	return currentStatusSettingsPtr;
+}
+
+uint8_t DeviceSettings::getCurrentStatus( void )
+{
+	return currentStatus;
 }
