@@ -82,19 +82,10 @@ void BenderPanel::reset( void )
 //---------------------------------------------------------------------------//
 void BenderPanel::processMachine( void )
 {
-	statusByteSettings * currentStatusObject = settings.getCurrentStatusPtr();
 	
 	//Do small machines
 	if( downButton.serviceRisingEdge() )
 	{
-		if( settings.getCurrentStatus() > 8 )
-		{
-			settings.setCurrentStatus( settings.getCurrentStatus() - 1 );
-		}
-		else
-		{
-			settings.setCurrentStatus( 16 );
-		}
 		newStatusFlag.setFlag();
 	}
 	else
@@ -103,14 +94,6 @@ void BenderPanel::processMachine( void )
 	}
 	if( upButton.serviceRisingEdge() )
 	{
-		if( settings.getCurrentStatus() < 16 )
-		{
-			settings.setCurrentStatus( settings.getCurrentStatus() + 1 );
-		}
-		else
-		{
-			settings.setCurrentStatus( 8 );
-		}
 		newStatusFlag.setFlag();
 	}
 	else
@@ -119,6 +102,7 @@ void BenderPanel::processMachine( void )
 	}
 
 	uint8_t editChanged = 0;
+
 	if( option1Button.serviceRisingEdge() )
 	{
 		if( settings.editing == 1 )
@@ -181,17 +165,6 @@ void BenderPanel::processMachine( void )
 	if( selector.serviceChanged() )
 	{
 		selectorPosition = selector.getState();
-		if( currentStatusObject->modifiableMask & ( 0x01 << selectorPosition ))
-		{
-			//New position to update
-			//Turn off editing LED
-			option1Led.setState( LEDOFF );
-			//set option led
-			if( currentStatusObject->modifiedMask & ( 0x01 << selectorPosition ) )
-			{
-				option2Led.setState( LEDON );
-			}
-		}
 
 	}
 	
