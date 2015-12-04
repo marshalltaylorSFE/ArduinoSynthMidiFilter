@@ -14,8 +14,9 @@ enum PStates
 {
 	PInit,
 	PIdle,
-	PNewStatus,
 	PNewSelector,
+	PSelectorIdle,
+	PNewInput,
 
 };
 
@@ -59,7 +60,7 @@ public:
 private:
 	//Internal Flags
 	//  ..and data
-	MessagingFlag newStatusFlag;
+	MessagingFlag newSelector;
 	MessagingFlag newLeftKnob;
 	MessagingFlag newRightKnob;
 	

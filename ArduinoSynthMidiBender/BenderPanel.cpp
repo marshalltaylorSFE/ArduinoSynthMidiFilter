@@ -83,90 +83,6 @@ void BenderPanel::reset( void )
 void BenderPanel::processMachine( void )
 {
 	
-	//Do small machines
-	if( downButton.serviceRisingEdge() )
-	{
-		newStatusFlag.setFlag();
-	}
-	else
-	{
-		newStatusFlag.clearFlag();
-	}
-	if( upButton.serviceRisingEdge() )
-	{
-		newStatusFlag.setFlag();
-	}
-	else
-	{
-		newStatusFlag.clearFlag();
-	}
-
-	uint8_t editChanged = 0;
-
-	if( option1Button.serviceRisingEdge() )
-	{
-		if( settings.editing == 1 )
-		{
-			settings.editing = 0;
-			option1Led.setState( LEDOFF );
-		}
-		else
-		{
-			settings.editing = 1;
-			option1Led.setState( LEDFLASHING );
-		}
-
-		
-	}	
-	//Check conditions on new input from ANY option parameter, decide what to do later
-	uint8_t parameterChanged = 0;
-	if( option2Button.serviceRisingEdge() )
-	{
-		parameterChanged++;
-		option2Led.setState( LEDOFF );
-	}
-	if( option3Button.serviceRisingEdge() )
-	{
-		parameterChanged++;
-		option3Led.setState( LEDOFF );
-	}
-
-	if( leftSelector.serviceChanged() )
-	{
-		parameterChanged++;
-		leftSelectorPosition = leftSelector.getState();
-		//displayMode = 2;
-	}
-	if( rightSelector.serviceChanged() )
-	{
-		parameterChanged++;
-		rightSelectorPosition = rightSelector.getState();
-		//displayMode = 2;
-	}
-	if(( leftKnob.getState() > leftKnobPosition + KNOBDELTADETECT )||( leftKnob.getState() < rightKnobPosition - KNOBDELTADETECT ))
-	{
-		parameterChanged++;
-		leftKnobPosition = leftKnob.getState();
-		//displayMode = 3;
-	}
-	if(( rightKnob.getState() > rightKnobPosition + KNOBDELTADETECT )||( rightKnob.getState() < rightKnobPosition - KNOBDELTADETECT ))
-	{
-		parameterChanged++;
-		rightKnobPosition = rightKnob.getState();
-		displayMode = 3;
-	}	
-	
-	if( editChanged )
-	{
-		//Check for state of 'edit'
-		
-	}
-	
-	if( selector.serviceChanged() )
-	{
-		selectorPosition = selector.getState();
-
-	}
 	
 	//Do main machine
 	tickStateMachine();
@@ -222,41 +138,52 @@ void BenderPanel::tickStateMachine()
 		nextState = PIdle;
 		break;
 	case PIdle:
-		if( newStatusFlag.serviceRisingEdge() )
+		if( selector.serviceChanged() )
 		{
-			nextState = PNewStatus;
-			
-			//sprintf(tempString, "%4d", (unsigned int)settings.getCurrentStatus());
-			if( settings.getCurrentStatus() > 15 )
+			int8_t tempSelector = selector.getState();
+			if( ( tempSelector <= 6 ) && ( tempSelector >= 0) )
 			{
-				tempString[0] = ' ';
-				tempString[1] = 'A';
-				tempString[2] = 'L';
-				tempString[3] = 'L';
+				//Valid selector
+				selectorPosition = tempSelector;
+				nextState = PNewSelector;
+				displayMode = 1; //show knob
+			}
+
+		}
+        break;
+	case PNewSelector:
+		nextState = PSelectorIdle;
+        break;
+	case PSelectorIdle:
+		if( selector.serviceChanged() )
+		{
+			int8_t tempSelector = selector.getState();
+			if( ( tempSelector <= 6 ) && ( tempSelector >= 0) )
+			{
+				//Valid selector
+				selectorPosition = tempSelector;
+				nextState = PNewSelector;
+				displayMode = 1; //show knob
+				settings.editing = 0;
+				option1Led.setState( LEDOFF );
+			}
+		}
+		if( option1Button.serviceRisingEdge() )
+		{
+			if( settings.editing == 1 )
+			{
+				settings.editing = 0;
+				option1Led.setState( LEDOFF );
 			}
 			else
 			{
-				tempString[0] = ' ';
-				tempString[1] = ' ';
-				if( settings.getCurrentStatus() > 9 )
-				{
-					tempString[2] = 55 + settings.getCurrentStatus();
-				}
-				else
-				{
-					tempString[2] = 48 + settings.getCurrentStatus();
-				}
-				tempString[3] = 'h';
+				settings.editing = 1;
+				option1Led.setState( LEDFLASHING );
 			}
-			display.peekThrough( tempString, 1500 ); // 'data' type, time in ms to persist
-			
-			displayMode = 1; //show knob
 		}
+		nextState = PSelectorIdle;
         break;
-	case PNewStatus:
-		nextState = PIdle;
-        break;
-	case PNewSelector:
+	case PNewInput:
 		nextState = PIdle;
         break;
 	default:
