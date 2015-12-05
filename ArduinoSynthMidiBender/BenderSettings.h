@@ -27,7 +27,6 @@ class DeviceSettings
 public:
 	DeviceSettings( void );
 	void setCurrentStatus( uint8_t );
-	uint8_t getCurrentStatus( void );
 	
 	uint8_t inputAcceptChannel;
 	uint8_t outputMergeChannel;

@@ -100,7 +100,7 @@ void BenderPanel::processMachine( void )
 	switch( displayMode )
 	{
 		case 0:  //Display Status
-			if( settings.getCurrentStatus() > 15 )
+			if( settings.currentStatus > 15 )
 			{
 				tempString[0] = ' ';
 				tempString[1] = 'A';
@@ -111,13 +111,13 @@ void BenderPanel::processMachine( void )
 			{
 				tempString[0] = ' ';
 				tempString[1] = ' ';
-				if( settings.getCurrentStatus() > 9 )
+				if( settings.currentStatus > 9 )
 				{
-					tempString[2] = 55 + settings.getCurrentStatus();
+					tempString[2] = 55 + settings.currentStatus;
 				}
 				else
 				{
-					tempString[2] = 48 + settings.getCurrentStatus();
+					tempString[2] = 48 + settings.currentStatus;
 				}
 				tempString[3] = 'h';
 			}
@@ -201,7 +201,7 @@ void BenderPanel::tickStateMachine()
 		if( selector.serviceChanged() )
 		{
 			int8_t tempSelector = selector.getState();
-			if( ( tempSelector <= 6 ) && ( tempSelector >= 0) )
+			if( ( tempSelector <= 4 ) && ( tempSelector >= 0) )
 			{
 				//Valid selector
 				selectorPosition = tempSelector;
@@ -277,6 +277,7 @@ void BenderPanel::tickStateMachine()
 					//
 					settings.statusFilterEnabled = 0;
 					option2Led.setState( LEDOFF );
+					option3Led.setState( LEDOFF );
 					displayMode = 1; //show selector
 				}
 				else
@@ -288,6 +289,7 @@ void BenderPanel::tickStateMachine()
 			}
 			if( settings.editing )
 			{
+				displayMode = 0; //show status'
 				if( downButton.serviceRisingEdge() )
 				{
 					if( settings.currentStatus > 8 )
@@ -296,13 +298,12 @@ void BenderPanel::tickStateMachine()
 					}
 					else
 					{
-						settings.currentStatus = 16;
+						settings.currentStatus = 15;
 					}
-					displayMode = 0; //show status'
 					settings.statusFilterEnabled = 1;
 					option2Led.setState( LEDON );
 					//set led
-					if( settings.statusPassEnable && (0x01 << (settings.currentStatus - 8)) )
+					if( settings.statusPassEnable & (0x01 << (settings.currentStatus - 8)) )
 					{
 						option3Led.setState(LEDON);
 					}
@@ -313,7 +314,7 @@ void BenderPanel::tickStateMachine()
 				}
 				if( upButton.serviceRisingEdge() )
 				{
-					if( settings.currentStatus < 16 )
+					if( settings.currentStatus < 15 )
 					{
 						settings.currentStatus = settings.currentStatus + 1;
 					}
@@ -321,11 +322,10 @@ void BenderPanel::tickStateMachine()
 					{
 						settings.currentStatus = 8;
 					}
-					displayMode = 0; //show status'
 					settings.statusFilterEnabled = 1;
 					option2Led.setState( LEDON );
 					//set led
-					if( settings.statusPassEnable && (0x01 << (settings.currentStatus - 8)) )
+					if( settings.statusPassEnable & (0x01 << (settings.currentStatus - 8)) )
 					{
 						option3Led.setState(LEDON);
 					}
@@ -337,10 +337,10 @@ void BenderPanel::tickStateMachine()
 				if( option3Button.serviceRisingEdge() )
 				{
 					//compare selected status with saved data
-					if( settings.statusPassEnable && (0x01 << (settings.currentStatus - 8)) )
+					if( settings.statusPassEnable & (0x01 << (settings.currentStatus - 8)) )
 					{
 						option3Led.setState( LEDOFF );
-						settings.statusPassEnable &= !(0x01 << (settings.currentStatus - 8));
+						settings.statusPassEnable &= ~(0x01 << (settings.currentStatus - 8));
 					}
 					else
 					{
@@ -470,7 +470,7 @@ void BenderPanel::tickStateMachine()
 		if( selector.serviceChanged() )
 		{
 			int8_t tempSelector = selector.getState();
-			if( ( tempSelector <= 6 ) && ( tempSelector >= 0) )
+			if( ( tempSelector <= 4 ) && ( tempSelector >= 0) )
 			{
 				//Valid selector
 				selectorPosition = tempSelector;

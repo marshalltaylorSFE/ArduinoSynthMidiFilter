@@ -57,6 +57,8 @@ public:
 	
 	uint8_t messagePassThroughTable[16];
 	
+	DeviceSettings settings;
+
 private:
 	//Internal Flags
 	//  ..and data
@@ -66,7 +68,6 @@ private:
 	
 	//State machine stuff  
 	PStates state;
-	DeviceSettings settings;
 	
 };
 

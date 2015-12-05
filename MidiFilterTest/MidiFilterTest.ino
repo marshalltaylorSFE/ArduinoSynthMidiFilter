@@ -1,10 +1,5 @@
-#include <Wire.h>
-//#include <flagMessaging.h>
-#include <PanelComponents.h>
-//#include <s7sWrapper.h>
 #include <timeKeeper.h>
 #include <timerModule.h>
-#include "BenderSettings.h"
 
 
 //HOW TO OPERATE
@@ -54,14 +49,14 @@ TimerClass debugTimer(2000);
 
 
 //**Panel State Machine***********************//
-#include "BenderPanel.h"
-BenderPanel myBenderPanel;
+//#include "BenderPanel.h"
+//BenderPanel myBenderPanel;
 
 // MIDI things
 #include <MIDI.h>
 MIDI_CREATE_INSTANCE(HardwareSerial, Serial, midiA);
 
-uint8_t rxLedFlag = 0;
+//uint8_t rxLedFlag = 0;
 
 //Note on TimerClass-
 //Change with msTimerA.setInterval( <the new interval> );
@@ -82,63 +77,20 @@ uint8_t msTicksLocked = 1; //start locked out
 void handleNoteOn(byte channel, byte pitch, byte velocity)
 {
 	midiA.sendNoteOn(34, 56, 7);
-	rxLedFlag = 1;
-	if(( myBenderPanel.settings.inputChannelSetting == 0 )||( myBenderPanel.settings.inputChannelSetting == channel ))
-	{
-		//We're on the correct channel or we're in omni
-		if( myBenderPanel.settings.outputChannelSetting == 0 )
-		{
-			//Output is in pass through
-		}
-		else
-		{
-			//Re-assign output
-			channel = myBenderPanel.settings.outputChannelSetting;
-		}
-			
-		//midiA.sendNoteOn(pitch, velocity, 3);
-	}
 }
 
 void handleNoteOff(byte channel, byte pitch, byte velocity)
 {
-	rxLedFlag = 1;
-	if(( myBenderPanel.settings.inputChannelSetting == 0 )||( myBenderPanel.settings.inputChannelSetting == channel ))
-	{
-		//We're on the correct channel or we're in omni
-		if( myBenderPanel.settings.outputChannelSetting == 0 )
-		{
-			//Output is in pass through
-		}
-		else
-		{
-			//Re-assign output
-			channel = myBenderPanel.settings.outputChannelSetting;
-		}
-			
-		//midiA.sendNoteOff(pitch, velocity, channel);
-	}
-	
+	midiA.sendNoteOff(34, 0, 7);
 }
 
 void setup()
 {
-	for(int i = 0; i < 16; i++)
-	{
-		//messagePassThroughTable[i] = 1;
-	}
 	//Initialize serial:
 	//Serial.begin(9600);
 	delay(2000);
 	//Serial.println("Program Started");
-	
-	Wire.begin();  // Initialize hardware I2C pins
-	
-	//Init panel.h stuff
-	myBenderPanel.init();
 
-	//Go to fresh state
-	myBenderPanel.reset();
 	//Connect MIDI handlers
 	midiA.setHandleNoteOn(handleNoteOn);  // Put only the name of the function
 	midiA.setHandleNoteOff(handleNoteOff);
@@ -209,43 +161,24 @@ void loop()
 	//**Debounce timer****************************//  
 	if(debounceTimer.flagStatus() == PENDING)
 	{
-		myBenderPanel.timersMIncrement(5);
-	
 	}
 		
 	//**Process the panel and state machine***********//  
 	if(panelUpdateTimer.flagStatus() == PENDING)
 	{
-		//Provide inputs
-		if( rxLedFlag == 1 )
-		{
-			rxLedFlag = 0;
-			myBenderPanel.setRxLed();
-		}
-
-		//Tick the machine
-		myBenderPanel.processMachine();
-		
-		//Deal with outputs
 	}
 	//**Fast LED toggling of the panel class***********//  
 	if(ledToggleFastTimer.flagStatus() == PENDING)
 	{
-		myBenderPanel.toggleFastFlasherState();
-		
 	}
 
 	//**LED toggling of the panel class***********//  
 	if(ledToggleTimer.flagStatus() == PENDING)
 	{
-		myBenderPanel.toggleFlasherState();
-		
 	}
 	//**Debug timer*******************************//  
 	if(debugTimer.flagStatus() == PENDING)
 	{
-		//rxLedFlag = 1;
-	
 	}
 	midiA.read();
 	
