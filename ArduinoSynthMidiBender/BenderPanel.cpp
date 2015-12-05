@@ -99,10 +99,29 @@ void BenderPanel::processMachine( void )
 	display.setState( SSON );
 	switch( displayMode )
 	{
-		case 0:  //Channel is song number
-			display.setData("h");
-			//sprintf(tempString, "%4d", (unsigned int)settings.selectedSetting);
-			//display.setData(tempString);
+		case 0:  //Display Status
+			if( settings.getCurrentStatus() > 15 )
+			{
+				tempString[0] = ' ';
+				tempString[1] = 'A';
+				tempString[2] = 'L';
+				tempString[3] = 'L';
+			}
+			else
+			{
+				tempString[0] = ' ';
+				tempString[1] = ' ';
+				if( settings.getCurrentStatus() > 9 )
+				{
+					tempString[2] = 55 + settings.getCurrentStatus();
+				}
+				else
+				{
+					tempString[2] = 48 + settings.getCurrentStatus();
+				}
+				tempString[3] = 'h';
+			}
+			display.setData(tempString);
 		break;
 		case 1:  //Display selector
 		    sprintf(tempString, "%4d", (unsigned int)selectorPosition);
@@ -112,12 +131,53 @@ void BenderPanel::processMachine( void )
 			tempString[3] = '-';
 			display.setData(tempString);
 		break;
-		case 2:  //Display left knob
-		    sprintf(tempString, "%4d", (unsigned int)leftKnobPosition);
+		case 2:  //show channels
+			if( settings.inputChannel > 0 )
+			{
+				sprintf(tempString, "%4d", (unsigned int)settings.inputChannel);
+				tempOutputString[1] = tempString[3];
+				tempOutputString[0] = tempString[2];
+			}
+			else
+			{
+				tempOutputString[1] = '-';
+				tempOutputString[0] = '-';
+			}
+			if( settings.outputChannel > 0 )
+			{
+				sprintf(tempString, "%4d", (unsigned int)settings.outputChannel);
+				tempOutputString[3] = tempString[3];
+				tempOutputString[2] = tempString[2];
+			}
+			else
+			{
+				tempOutputString[3] = '-';
+				tempOutputString[2] = '-';
+			}
+			display.setData(tempOutputString);
+		break;
+		case 3:  //Display Fixed Velo
+		    sprintf(tempString, "%4d", (unsigned int)settings.fixedVelocity);
 			display.setData(tempString);
 		break;
-		case 3:  //Display right knob
-		    sprintf(tempString, "%4d", (unsigned int)rightKnobPosition);
+		case 4:  //Display Min Velo
+		    sprintf(tempString, "%4d", (unsigned int)settings.minVelocity);
+			tempString[0] = tempString[1];
+			tempString[1] = tempString[2];
+			tempString[2] = tempString[3];
+			tempString[3] = '-';			
+			display.setData(tempString);
+		break;
+		case 5:  //Display Max Velo
+		    sprintf(tempString, "%4d", (unsigned int)settings.maxVelocity);
+			tempString[0] = '-';	
+			display.setData(tempString);
+		break;
+		case 6:  //data
+			tempString[0] = 'D';
+			tempString[1] = 'A';
+			tempString[2] = 'T';
+			tempString[3] = 'A';			
 			display.setData(tempString);
 		break;
 		default:
@@ -152,9 +212,261 @@ void BenderPanel::tickStateMachine()
 		}
         break;
 	case PNewSelector:
+		//DO STUFF HERE ON NEW SELECTOR CHANGES (SET UP DISPLAY)
+		//Clear a bunch of stuff
+		displayMode = 1; //show knob
+		settings.editing = 0;
+		option1Led.setState( LEDOFF );
+		option2Led.setState( LEDOFF );
+		option3Led.setState( LEDOFF );
+		//Set things per new selection
+		switch( selectorPosition )
+		{
+		case 0:
+			//Pass/block
+			if( settings.statusFilterEnabled )
+			{
+				option2Led.setState( LEDON );
+				displayMode = 6; //show channels
+			}
+			break;
+			break;
+		case 1:
+			//Channel Routing
+			if( settings.channelOpEdited )
+			{
+				option2Led.setState( LEDON );
+				displayMode = 2; //show channels
+			}
+			break;
+		case 2:
+			//Fix Velocity
+			if( settings.velocitySetting == VELO_FIXED )
+			{
+				option2Led.setState( LEDON );
+				displayMode = 3; //show fixed
+			}
+			break;
+		case 3:
+			//Fix Velocity
+			if( settings.velocitySetting == VELO_SCALED )
+			{
+				option2Led.setState( LEDON );
+				displayMode = 6; //show "data"
+			}
+			break;
+		case 4:
+			break;
+		default:
+			break;
+		}
+		
 		nextState = PSelectorIdle;
-        break;
+		break;
 	case PSelectorIdle:
+		nextState = PSelectorIdle; //Default operation
+		switch( selectorPosition )
+		{
+		case 0:
+			//Pass/block statusFilterEnabled
+			//Only button effects
+			if(( option2Button.serviceRisingEdge() )&&( settings.editing ))
+			{
+				if( settings.statusFilterEnabled )
+				{
+					//
+					settings.statusFilterEnabled = 0;
+					option2Led.setState( LEDOFF );
+					displayMode = 1; //show selector
+				}
+				else
+				{
+					settings.statusFilterEnabled = 1;
+					option2Led.setState( LEDON );
+					displayMode = 0; //show status'
+				}
+			}
+			if( settings.editing )
+			{
+				if( downButton.serviceRisingEdge() )
+				{
+					if( settings.currentStatus > 8 )
+					{
+						settings.currentStatus = settings.currentStatus - 1;
+					}
+					else
+					{
+						settings.currentStatus = 16;
+					}
+					displayMode = 0; //show status'
+					settings.statusFilterEnabled = 1;
+					option2Led.setState( LEDON );
+					//set led
+					if( settings.statusPassEnable && (0x01 << (settings.currentStatus - 8)) )
+					{
+						option3Led.setState(LEDON);
+					}
+					else
+					{
+						option3Led.setState(LEDOFF);
+					}
+				}
+				if( upButton.serviceRisingEdge() )
+				{
+					if( settings.currentStatus < 16 )
+					{
+						settings.currentStatus = settings.currentStatus + 1;
+					}
+					else
+					{
+						settings.currentStatus = 8;
+					}
+					displayMode = 0; //show status'
+					settings.statusFilterEnabled = 1;
+					option2Led.setState( LEDON );
+					//set led
+					if( settings.statusPassEnable && (0x01 << (settings.currentStatus - 8)) )
+					{
+						option3Led.setState(LEDON);
+					}
+					else
+					{
+						option3Led.setState(LEDOFF);
+					}
+				}
+				if( option3Button.serviceRisingEdge() )
+				{
+					//compare selected status with saved data
+					if( settings.statusPassEnable && (0x01 << (settings.currentStatus - 8)) )
+					{
+						option3Led.setState( LEDOFF );
+						settings.statusPassEnable &= !(0x01 << (settings.currentStatus - 8));
+					}
+					else
+					{
+						option3Led.setState( LEDON );
+						settings.statusPassEnable |= (0x01 << (settings.currentStatus - 8));
+					}
+				}
+			}
+			break;
+		case 1:
+			//Channel Routing
+			//Knobs work only if button state
+			if(( option2Button.serviceRisingEdge() )&&( settings.editing ))
+			{
+				if( settings.channelOpEdited )
+				{
+					//
+					settings.channelOpEdited = 0;
+					option2Led.setState( LEDOFF );
+					displayMode = 1; //show selector
+				}
+				else
+				{
+					settings.channelOpEdited = 1;
+					option2Led.setState( LEDON );
+					displayMode = 2; //show channels
+				}
+			}
+			//If editing enabled, use knob inputs
+			if( settings.editing )
+			{
+				if( leftSelector.serviceChanged() )
+				{
+					settings.inputChannel = leftSelector.getState();
+					settings.channelOpEdited = 1;
+					option2Led.setState( LEDON );
+					displayMode = 2; //show channels
+				}
+				if( rightSelector.serviceChanged() )
+				{
+					settings.outputChannel = rightSelector.getState();
+					settings.channelOpEdited = 1;
+					option2Led.setState( LEDON );
+					displayMode = 2; //show channels
+				}
+			}
+			break;
+		case 2:
+			//Fix Velocity
+			//Knobs work only if button state
+			if(( option2Button.serviceRisingEdge() )&&( settings.editing ))
+			{
+				if(( settings.velocitySetting == VELO_FIXED )||( settings.velocitySetting == VELO_SCALED))
+				{
+					//
+					settings.velocitySetting = VELO_OFF;
+					option2Led.setState( LEDOFF );
+					displayMode = 1; //show selector
+					
+				}
+				else
+				{
+					settings.velocitySetting = VELO_FIXED;
+					option2Led.setState( LEDON );
+					displayMode = 3; //show fixed					
+				}
+			}
+			//If editing enabled, use knob inputs
+			if( settings.editing )
+			{
+				if(( rightKnob.getState() > rightKnobPosition + KNOBDELTADETECT )||( rightKnob.getState() < rightKnobPosition - KNOBDELTADETECT ))
+				{
+					rightKnobPosition = rightKnob.getState();
+					settings.fixedVelocity = rightKnobPosition >> 1;
+					settings.velocitySetting = VELO_FIXED;
+					option2Led.setState( LEDON );
+					displayMode = 3; //show fixed
+				}
+			}
+			break;
+		case 3:
+			//Scale Velocity
+			//Knobs work only if button state
+			if(( option2Button.serviceRisingEdge() )&&( settings.editing ))
+			{
+				if(( settings.velocitySetting == VELO_FIXED )||( settings.velocitySetting == VELO_SCALED))
+				{
+					//
+					settings.velocitySetting = VELO_OFF;
+					option2Led.setState( LEDOFF );
+					displayMode = 1; //show selector
+					
+				}
+				else
+				{
+					settings.velocitySetting = VELO_SCALED;
+					option2Led.setState( LEDON );
+					displayMode = 6; //show data					
+				}
+			}
+			//If editing enabled, use knob inputs
+			if( settings.editing )
+			{
+				if(( leftKnob.getState() > leftKnobPosition + KNOBDELTADETECT )||( leftKnob.getState() < leftKnobPosition - KNOBDELTADETECT ))
+				{
+					leftKnobPosition = leftKnob.getState();
+					settings.minVelocity = leftKnobPosition >> 1;
+					settings.velocitySetting = VELO_SCALED;
+					option2Led.setState( LEDON );
+					displayMode = 4; //show min
+				}
+				if(( rightKnob.getState() > rightKnobPosition + KNOBDELTADETECT )||( rightKnob.getState() < rightKnobPosition - KNOBDELTADETECT ))
+				{
+					rightKnobPosition = rightKnob.getState();
+					settings.maxVelocity = rightKnobPosition >> 1;
+					settings.velocitySetting = VELO_SCALED;
+					option2Led.setState( LEDON );
+					displayMode = 5; //show max
+				}
+			}
+			break;
+		case 4:
+			break;
+		default:
+			break;
+		}
 		if( selector.serviceChanged() )
 		{
 			int8_t tempSelector = selector.getState();
@@ -163,11 +475,9 @@ void BenderPanel::tickStateMachine()
 				//Valid selector
 				selectorPosition = tempSelector;
 				nextState = PNewSelector;
-				displayMode = 1; //show knob
-				settings.editing = 0;
-				option1Led.setState( LEDOFF );
 			}
 		}
+			
 		if( option1Button.serviceRisingEdge() )
 		{
 			if( settings.editing == 1 )
@@ -181,7 +491,6 @@ void BenderPanel::tickStateMachine()
 				option1Led.setState( LEDFLASHING );
 			}
 		}
-		nextState = PSelectorIdle;
         break;
 	case PNewInput:
 		nextState = PIdle;
@@ -191,11 +500,6 @@ void BenderPanel::tickStateMachine()
         break;
     }
 
-	////Master with the E-Stop
-	if( option1Button.serviceRisingEdge() )
-	{
-	}
-	
     state = nextState;
 
 }

@@ -31,24 +31,24 @@ public:
 	
 	uint8_t inputAcceptChannel;
 	uint8_t outputMergeChannel;
-	uint8_t status8PassEnable : 1;
-	uint8_t status9PassEnable : 1;
-	uint8_t statusAPassEnable : 1;
-	uint8_t statusBPassEnable : 1;
-	uint8_t statusCPassEnable : 1;
-	uint8_t statusDPassEnable : 1;
-	uint8_t statusEPassEnable : 1;
-	uint8_t statusFPassEnable : 1;
-	uint8_t :0;
+	uint8_t statusPassEnable;
+	uint8_t statusFilterEnabled;
+	
+	
 	uint8_t maxVelocity;
 	uint8_t minVelocity;
+	uint8_t fixedVelocity;
 	
 	uint8_t currentStatus;
+	uint8_t currentSelection;
 	uint8_t editing;
 	
 	VelocityValues velocitySetting;
+	uint8_t channelOpEdited;
 	InputChannelValues inputChannelSetting;
 	OutputChannelValues outputChannelSetting;
+	uint8_t inputChannel;
+	uint8_t outputChannel;
 
 };
 

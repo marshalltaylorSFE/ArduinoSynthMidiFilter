@@ -38,8 +38,8 @@ void Panel::init( void )
 	option3Led.init(option3LedPin, 0, &flasherState, &fastFlasherState);
 
 	selector.init(selectorPin, 255, 0, 10 ); //With max, min ranges and resolution
-	leftSelector.init(leftKnobPin, 255, 0, 16 ); //With max, min ranges and resolution
-	rightSelector.init(rightKnobPin, 255, 0, 16 ); //With max, min ranges and resolution
+	leftSelector.init(leftKnobPin, 255, 0, 17 ); //With max, min ranges and resolution
+	rightSelector.init(rightKnobPin, 255, 0, 17 ); //With max, min ranges and resolution
 	leftKnob.init(leftKnobPin);
 	rightKnob.init(rightKnobPin);
 

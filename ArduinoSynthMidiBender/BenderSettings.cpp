@@ -4,14 +4,7 @@ DeviceSettings::DeviceSettings( void )
 {
 	inputAcceptChannel = 1;
 	outputMergeChannel = 1;
-	status8PassEnable = 1;
-	status9PassEnable = 1;
-	statusAPassEnable = 1;
-	statusBPassEnable = 1;
-	statusCPassEnable = 1;
-	statusDPassEnable = 1;
-	statusEPassEnable = 1;
-	statusFPassEnable = 1;
+	statusPassEnable = 0xFF;
 	maxVelocity = 127;
 	minVelocity = 0;
 	currentStatus = 0x10;  //Hardcode default

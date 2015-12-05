@@ -31,6 +31,7 @@ public:
 	PanelKnob8Bit rightKnob;
 	
 	char tempString[10];  // Will be used with sprintf to create strings
+	char tempOutputString[10];  // Will be used with sprintf to create strings
 	sSDisplay display;
 
 protected:
