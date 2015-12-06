@@ -61,6 +61,7 @@ BenderPanel myBenderPanel;
 #include <MIDI.h>
 MIDI_CREATE_INSTANCE(HardwareSerial, Serial, midiA);
 
+uint8_t txLedFlag = 0;
 uint8_t rxLedFlag = 0;
 
 //Note on TimerClass-
@@ -81,45 +82,177 @@ uint8_t msTicksLocked = 1; //start locked out
 
 void handleNoteOn(byte channel, byte pitch, byte velocity)
 {
-	midiA.sendNoteOn(34, 56, 7);
 	rxLedFlag = 1;
-	if(( myBenderPanel.settings.inputChannelSetting == 0 )||( myBenderPanel.settings.inputChannelSetting == channel ))
+	if(( myBenderPanel.settings.inputChannel == 0 )||( myBenderPanel.settings.inputChannel == channel ))
 	{
-		//We're on the correct channel or we're in omni
-		if( myBenderPanel.settings.outputChannelSetting == 0 )
+		if( myBenderPanel.settings.outputChannel == 0 )
 		{
-			//Output is in pass through
+			//Output set to pass-through
 		}
 		else
 		{
 			//Re-assign output
-			channel = myBenderPanel.settings.outputChannelSetting;
+			channel = myBenderPanel.settings.outputChannel;
 		}
-			
-		//midiA.sendNoteOn(pitch, velocity, 3);
+		
+		//Modify velocity
+		switch( myBenderPanel.settings.velocitySetting )
+		{
+			case VELO_FIXED:
+				//Over-ride input
+				velocity = myBenderPanel.settings.fixedVelocity;
+			break;
+			case VELO_SCALED:
+				//Scale, assume input has full 127 range
+				if( myBenderPanel.settings.maxVelocity > myBenderPanel.settings.minVelocity )
+				{
+					int8_t tempRange = myBenderPanel.settings.maxVelocity - myBenderPanel.settings.minVelocity;
+					float mathVar = tempRange * velocity / 127;
+					mathVar += myBenderPanel.settings.minVelocity;
+					velocity = mathVar;
+				}
+				else
+				{
+					velocity = myBenderPanel.settings.maxVelocity;
+				}
+			break;
+			default:
+			case VELO_OFF:
+			break;
+		}
+		midiA.sendNoteOn(pitch, velocity, channel);
+		txLedFlag = 1;
 	}
 }
 
 void handleNoteOff(byte channel, byte pitch, byte velocity)
 {
 	rxLedFlag = 1;
-	if(( myBenderPanel.settings.inputChannelSetting == 0 )||( myBenderPanel.settings.inputChannelSetting == channel ))
+	if(( myBenderPanel.settings.inputChannel == 0 )||( myBenderPanel.settings.inputChannel == channel ))
 	{
-		//We're on the correct channel or we're in omni
-		if( myBenderPanel.settings.outputChannelSetting == 0 )
+		if( myBenderPanel.settings.outputChannel == 0 )
 		{
-			//Output is in pass through
+			//Output set to pass-through
 		}
 		else
 		{
 			//Re-assign output
-			channel = myBenderPanel.settings.outputChannelSetting;
+			channel = myBenderPanel.settings.outputChannel;
 		}
-			
-		//midiA.sendNoteOff(pitch, velocity, channel);
+		
+		//Modify velocity
+		if( velocity != 0 )
+		{
+			switch( myBenderPanel.settings.velocitySetting )
+			{
+				case VELO_FIXED:
+					//Over-ride input
+					velocity = myBenderPanel.settings.fixedVelocity;
+				break;
+				case VELO_SCALED:
+					//Scale, assume input has full 127 range
+					if( myBenderPanel.settings.maxVelocity > myBenderPanel.settings.minVelocity )
+					{
+						int8_t tempRange = myBenderPanel.settings.maxVelocity - myBenderPanel.settings.minVelocity;
+						float mathVar = tempRange * velocity / 127;
+						mathVar += myBenderPanel.settings.minVelocity;
+						velocity = mathVar;
+					}
+					else
+					{
+						velocity = myBenderPanel.settings.maxVelocity;
+					}
+				break;
+				default:
+				case VELO_OFF:
+				break;
+			}
+		}
+		else
+		{
+			//do nothing
+		}
+		midiA.sendNoteOff(pitch, velocity, channel);
+		txLedFlag = 1;
 	}
 	
 }
+
+void HandleAfterTouchPoly(byte channel, byte note, byte pressure)
+{
+	//status A
+	rxLedFlag = 1;
+	if(myBenderPanel.settings.statusBlockBits & 0x4 )
+	{
+		//blocked
+	}
+	else
+	{
+		txLedFlag = 1;
+		midiA.sendPolyPressure(note, pressure, channel);
+	}
+}
+
+void HandleControlChange(byte channel, byte number, byte value)
+{
+	//status B
+	rxLedFlag = 1;
+	if(myBenderPanel.settings.statusBlockBits & 0x8 )
+	{
+		//blocked
+	}
+	else
+	{
+		txLedFlag = 1;
+		midiA.sendControlChange(number, value, channel);
+	}
+}
+
+void HandleProgramChange(byte channel, byte number)
+{
+	//status C
+	rxLedFlag = 1;
+	if(myBenderPanel.settings.statusBlockBits & 0x10 )
+	{
+		//blocked
+	}
+	else
+	{
+		txLedFlag = 1;
+		midiA.sendProgramChange(number, channel);
+	}
+}
+
+void HandleAfterTouchChannel(byte channel, byte pressure)
+{
+	//status D
+	rxLedFlag = 1;
+	if(myBenderPanel.settings.statusBlockBits & 0x20 )
+	{
+		//blocked
+	}
+	else
+	{
+		txLedFlag = 1;
+		midiA.sendAfterTouch(pressure, channel);
+	}
+}
+
+void HandlePitchBend(byte channel, int bend)
+{
+	//status E
+	rxLedFlag = 1;
+	if(myBenderPanel.settings.statusBlockBits & 0x40 )
+	{
+		//blocked
+	}
+	else
+	{
+		txLedFlag = 1;
+		midiA.sendPitchBend(bend, channel);
+	}
+}
+
 
 void setup()
 {
@@ -142,7 +275,11 @@ void setup()
 	//Connect MIDI handlers
 	midiA.setHandleNoteOn(handleNoteOn);  // Put only the name of the function
 	midiA.setHandleNoteOff(handleNoteOff);
-	
+	midiA.setHandleControlChange(HandleControlChange);
+	midiA.setHandleProgramChange(HandleProgramChange);
+	midiA.setHandleAfterTouchChannel(HandleAfterTouchChannel);
+	midiA.setHandlePitchBend(HandlePitchBend);
+
 	// Initiate MIDI communications, listen to all channels
 	midiA.begin(MIDI_CHANNEL_OMNI);
 	//midiA.turnThruOn();
@@ -222,7 +359,12 @@ void loop()
 			rxLedFlag = 0;
 			myBenderPanel.setRxLed();
 		}
-
+		//Provide inputs
+		if( txLedFlag == 1 )
+		{
+			txLedFlag = 0;
+			myBenderPanel.setTxLed();
+		}
 		//Tick the machine
 		myBenderPanel.processMachine();
 		

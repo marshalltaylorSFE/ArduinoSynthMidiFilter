@@ -30,7 +30,7 @@ public:
 	
 	uint8_t inputAcceptChannel;
 	uint8_t outputMergeChannel;
-	uint8_t statusPassEnable;
+	uint8_t statusBlockBits;
 	uint8_t statusFilterEnabled;
 	
 	
@@ -39,7 +39,6 @@ public:
 	uint8_t fixedVelocity;
 	
 	uint8_t currentStatus;
-	uint8_t currentSelection;
 	uint8_t editing;
 	
 	VelocityValues velocitySetting;

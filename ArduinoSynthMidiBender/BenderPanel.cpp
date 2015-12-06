@@ -181,7 +181,13 @@ void BenderPanel::processMachine( void )
 			display.setData(tempString);
 		break;
 		default:
-		break;
+		case 7:  //data
+			tempString[0] = '-';
+			tempString[1] = ' ';
+			tempString[2] = ' ';
+			tempString[3] = '-';			
+			display.setData(tempString);
+		break;		break;
 	}
 	
 	update();
@@ -198,7 +204,8 @@ void BenderPanel::tickStateMachine()
 		nextState = PIdle;
 		break;
 	case PIdle:
-		if( selector.serviceChanged() )
+		//if( selector.serviceChanged() )
+		//Do this until a valid selection has been made
 		{
 			int8_t tempSelector = selector.getState();
 			if( ( tempSelector <= 4 ) && ( tempSelector >= 0) )
@@ -207,6 +214,10 @@ void BenderPanel::tickStateMachine()
 				selectorPosition = tempSelector;
 				nextState = PNewSelector;
 				displayMode = 1; //show knob
+			}
+			else
+			{
+				displayMode = 7; //show blanker
 			}
 
 		}
@@ -303,7 +314,7 @@ void BenderPanel::tickStateMachine()
 					settings.statusFilterEnabled = 1;
 					option2Led.setState( LEDON );
 					//set led
-					if( settings.statusPassEnable & (0x01 << (settings.currentStatus - 8)) )
+					if( settings.statusBlockBits & (0x01 << (settings.currentStatus - 8)) )
 					{
 						option3Led.setState(LEDON);
 					}
@@ -325,7 +336,7 @@ void BenderPanel::tickStateMachine()
 					settings.statusFilterEnabled = 1;
 					option2Led.setState( LEDON );
 					//set led
-					if( settings.statusPassEnable & (0x01 << (settings.currentStatus - 8)) )
+					if( settings.statusBlockBits & (0x01 << (settings.currentStatus - 8)) )
 					{
 						option3Led.setState(LEDON);
 					}
@@ -337,15 +348,15 @@ void BenderPanel::tickStateMachine()
 				if( option3Button.serviceRisingEdge() )
 				{
 					//compare selected status with saved data
-					if( settings.statusPassEnable & (0x01 << (settings.currentStatus - 8)) )
+					if( settings.statusBlockBits & (0x01 << (settings.currentStatus - 8)) )
 					{
 						option3Led.setState( LEDOFF );
-						settings.statusPassEnable &= ~(0x01 << (settings.currentStatus - 8));
+						settings.statusBlockBits &= ~(0x01 << (settings.currentStatus - 8));
 					}
 					else
 					{
 						option3Led.setState( LEDON );
-						settings.statusPassEnable |= (0x01 << (settings.currentStatus - 8));
+						settings.statusBlockBits |= (0x01 << (settings.currentStatus - 8));
 					}
 				}
 			}

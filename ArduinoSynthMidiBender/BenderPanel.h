@@ -39,8 +39,7 @@ public:
 	
 	//Flags coming in from the system
 
-	uint8_t tapLedFlag;
-	uint8_t syncLedFlag;
+
 	uint8_t rxLedFlag;
 	uint8_t txLedFlag;
 	
