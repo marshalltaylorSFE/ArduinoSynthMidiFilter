@@ -18,6 +18,12 @@ DeviceSettings::DeviceSettings( void )
 	inputChannel = 0;
 	outputChannel = 0;
 	
+	upperOutputChannel = 0; //Used for split
+	splitPoint = 40;
+	splitMode = SPLIT_OFF;
+	upperOctave = 0;
+	splitEdited = 0;
+	
 	statusBlockBits = 0xFC;
 	statusFilterEnabled = 1;
 }

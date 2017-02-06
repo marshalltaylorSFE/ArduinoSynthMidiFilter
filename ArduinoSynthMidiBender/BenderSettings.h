@@ -22,6 +22,13 @@ enum OutputChannelValues
 	OUT_MERGE
 };
 
+enum SplitModeValues
+{
+	SPLIT_OFF,
+	SPLIT_NORMAL,
+	SPLIT_CHROUS_TOP,
+	SPLIT_CHROUS_BOTTOM
+};
 class DeviceSettings
 {
 public:
@@ -46,7 +53,12 @@ public:
 	InputChannelValues inputChannelSetting;
 	OutputChannelValues outputChannelSetting;
 	uint8_t inputChannel;
-	uint8_t outputChannel;
+	uint8_t outputChannel; //Used for channel
+	uint8_t upperOutputChannel; //Used for split
+	uint8_t splitPoint;
+	uint8_t splitEdited;
+	SplitModeValues splitMode;
+	int8_t upperOctave;
 
 };
 

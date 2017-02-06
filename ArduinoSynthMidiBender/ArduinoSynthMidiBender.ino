@@ -16,8 +16,8 @@
 //  MAXTIMER + MAXINTERVAL = max countable value.
 
 //Globals
-uint16_t MAXTIMER = 60000;
-uint16_t MAXINTERVAL = 2000;
+uint16_t maxTimer = 60000;
+uint16_t maxInterval = 2000;
 
 
 #define LEDPIN 13
@@ -82,17 +82,53 @@ uint8_t msTicksLocked = 1; //start locked out
 
 void handleNoteOn(byte channel, byte pitch, byte velocity)
 {
+	uint8_t playSecondNote = 0;
 	rxLedFlag = 1;
 	if(( myBenderPanel.settings.inputChannel == 0 )||( myBenderPanel.settings.inputChannel == channel ))
 	{
-		if( myBenderPanel.settings.outputChannel == 0 )
+		if( myBenderPanel.settings.channelOpEdited )
 		{
-			//Output set to pass-through
-		}
-		else
-		{
-			//Re-assign output
 			channel = myBenderPanel.settings.outputChannel;
+		}
+		if( myBenderPanel.settings.splitEdited )
+		{
+			int tempPitch = 0;
+			switch(myBenderPanel.settings.splitMode)
+			{
+				case SPLIT_OFF:
+				default:
+				break;
+				case SPLIT_NORMAL:
+					if( pitch > myBenderPanel.settings.splitPoint )
+					{
+						channel = myBenderPanel.settings.upperOutputChannel;
+						tempPitch = pitch + myBenderPanel.settings.upperOctave * 12;
+						if( tempPitch > 127 ) tempPitch = 127;
+						if( tempPitch < 0 ) tempPitch = 0;
+						pitch = tempPitch;
+					}
+				break;
+				case SPLIT_CHROUS_TOP:
+					if( pitch > myBenderPanel.settings.splitPoint )
+					{
+						tempPitch = pitch + myBenderPanel.settings.upperOctave * 12;
+						if( tempPitch > 127 ) tempPitch = 127;
+						if( tempPitch < 0 ) tempPitch = 0;
+						pitch = tempPitch;
+						playSecondNote = 1;
+					}
+				break;
+				case SPLIT_CHROUS_BOTTOM:
+					if( pitch < myBenderPanel.settings.splitPoint )
+					{
+						tempPitch = pitch + myBenderPanel.settings.upperOctave * 12;
+						if( tempPitch > 127 ) tempPitch = 127;
+						if( tempPitch < 0 ) tempPitch = 0;
+						pitch = tempPitch;
+						playSecondNote = 1;
+					}
+				break;
+			}
 		}
 		
 		//Modify velocity
@@ -121,23 +157,64 @@ void handleNoteOn(byte channel, byte pitch, byte velocity)
 			break;
 		}
 		midiA.sendNoteOn(pitch, velocity, channel);
+		if( playSecondNote )
+		{
+			channel = myBenderPanel.settings.upperOutputChannel;
+			midiA.sendNoteOn(pitch, velocity, channel);
+		}
 		txLedFlag = 1;
 	}
 }
 
 void handleNoteOff(byte channel, byte pitch, byte velocity)
 {
+	uint8_t playSecondNote = 0;
 	rxLedFlag = 1;
 	if(( myBenderPanel.settings.inputChannel == 0 )||( myBenderPanel.settings.inputChannel == channel ))
 	{
-		if( myBenderPanel.settings.outputChannel == 0 )
+		if( myBenderPanel.settings.channelOpEdited )
 		{
-			//Output set to pass-through
-		}
-		else
-		{
-			//Re-assign output
 			channel = myBenderPanel.settings.outputChannel;
+		}
+		if( myBenderPanel.settings.splitEdited )
+		{
+			int tempPitch = 0;
+			switch(myBenderPanel.settings.splitMode)
+			{
+				case SPLIT_OFF:
+				default:
+				break;
+				case SPLIT_NORMAL:
+					if( pitch > myBenderPanel.settings.splitPoint )
+					{
+						channel = myBenderPanel.settings.upperOutputChannel;
+						tempPitch = pitch + myBenderPanel.settings.upperOctave * 12;
+						if( tempPitch > 127 ) tempPitch = 127;
+						if( tempPitch < 0 ) tempPitch = 0;
+						pitch = tempPitch;
+					}
+				break;
+				case SPLIT_CHROUS_TOP:
+					if( pitch > myBenderPanel.settings.splitPoint )
+					{
+						tempPitch = pitch + myBenderPanel.settings.upperOctave * 12;
+						if( tempPitch > 127 ) tempPitch = 127;
+						if( tempPitch < 0 ) tempPitch = 0;
+						pitch = tempPitch;
+						playSecondNote = 1;
+					}
+				break;
+				case SPLIT_CHROUS_BOTTOM:
+					if( pitch < myBenderPanel.settings.splitPoint )
+					{
+						tempPitch = pitch + myBenderPanel.settings.upperOctave * 12;
+						if( tempPitch > 127 ) tempPitch = 127;
+						if( tempPitch < 0 ) tempPitch = 0;
+						pitch = tempPitch;
+						playSecondNote = 1;
+					}
+				break;
+			}
 		}
 		
 		//Modify velocity
@@ -173,6 +250,11 @@ void handleNoteOff(byte channel, byte pitch, byte velocity)
 			//do nothing
 		}
 		midiA.sendNoteOff(pitch, velocity, channel);
+		if( playSecondNote )
+		{
+			channel = myBenderPanel.settings.upperOutputChannel;
+			midiA.sendNoteOff(pitch, velocity, channel);
+		}
 		txLedFlag = 1;
 	}
 	
@@ -406,9 +488,9 @@ void serviceMS(void)
 #endif
 {
 	uint32_t returnVar = 0;
-	if( msTicks >= ( MAXTIMER + MAXINTERVAL ) )
+	if( msTicks >= ( maxTimer + maxInterval ) )
 	{
-		returnVar = msTicks - MAXTIMER;
+		returnVar = msTicks - maxTimer;
 
 	}
 	else

@@ -180,8 +180,25 @@ void BenderPanel::processMachine( void )
 			tempString[3] = 'A';			
 			display.setData(tempString);
 		break;
+		case 8:  //show channels
+			sprintf(tempString, "%4d", (unsigned int)settings.splitPoint);
+			tempOutputString[1] = tempString[3];
+			tempOutputString[0] = tempString[2];
+			if( settings.upperOutputChannel > 0 )
+			{
+				sprintf(tempString, "%4d", (unsigned int)settings.upperOutputChannel);
+				tempOutputString[3] = tempString[3];
+				tempOutputString[2] = tempString[2];
+			}
+			else
+			{
+				tempOutputString[3] = '-';
+				tempOutputString[2] = '-';
+			}
+			display.setData(tempOutputString);
+		break;
 		default:
-		case 7:  //data
+		case 7:  //
 			tempString[0] = '-';
 			tempString[1] = ' ';
 			tempString[2] = ' ';
@@ -208,7 +225,7 @@ void BenderPanel::tickStateMachine()
 		//Do this until a valid selection has been made
 		{
 			int8_t tempSelector = selector.getState();
-			if( ( tempSelector <= 4 ) && ( tempSelector >= 0) )
+			if( ( tempSelector <= 7 ) && ( tempSelector >= 0) )
 			{
 				//Valid selector
 				selectorPosition = tempSelector;
@@ -267,6 +284,14 @@ void BenderPanel::tickStateMachine()
 			}
 			break;
 		case 4:
+			break;
+		case 5:
+			//Channel Routing
+			if( settings.splitEdited )
+			{
+				option2Led.setState( LEDON );
+				displayMode = 8; //show split channels
+			}
 			break;
 		default:
 			break;
@@ -475,18 +500,78 @@ void BenderPanel::tickStateMachine()
 			break;
 		case 4:
 			break;
+		case 5:
+			//Channel Routing
+			//Knobs work only if button state
+			if(( option2Button.serviceRisingEdge() )&&( settings.editing ))
+			{
+				if( settings.splitEdited )
+				{
+					//
+					settings.splitEdited = 0;
+					option2Led.setState( LEDOFF );
+					displayMode = 1; //show selector
+				}
+				else
+				{
+					settings.splitEdited = 1;
+					option2Led.setState( LEDON );
+					displayMode = 8; //show key, channel
+				}
+			}
+			//If editing enabled, use knob inputs
+			if( settings.editing )
+			{
+				if(( leftKnob.getState() > leftKnobPosition + KNOBDELTADETECT )||( leftKnob.getState() < leftKnobPosition - KNOBDELTADETECT ))
+				{
+					leftKnobPosition = leftKnob.getState();
+					settings.splitPoint = (((float)leftKnobPosition / 255) * 80) + 16;
+					settings.splitEdited = 1;
+					option2Led.setState( LEDON );
+					displayMode = 8; //show key, channel
+				}
+				if( rightSelector.serviceChanged() )
+				{
+					settings.upperOutputChannel = rightSelector.getState();
+					if( settings.upperOutputChannel > 0 )
+					{
+						settings.splitMode = SPLIT_NORMAL;
+						if( settings.upperOutputChannel > 5 )
+						{
+							settings.upperOutputChannel = settings.upperOutputChannel - 5;
+							settings.splitMode = SPLIT_CHROUS_TOP;
+							if( settings.upperOutputChannel > 5 )
+							{
+								settings.upperOutputChannel = settings.upperOutputChannel - 5;
+								settings.splitMode = SPLIT_CHROUS_BOTTOM;
+							}
+						}
+					}
+					else
+					{
+						settings.splitMode = SPLIT_OFF;
+					}
+					if( settings.splitMode == SPLIT_CHROUS_TOP )
+					{
+						display.peekThrough( "C up", 666 );
+					}
+					if( settings.splitMode == SPLIT_CHROUS_BOTTOM )
+					{
+						display.peekThrough( "C dn", 666 );
+					}
+					
+					settings.splitEdited = 1;
+					option2Led.setState( LEDON );
+					displayMode = 8; //show key, channel
+				}
+			}
+			break;
 		default:
 			break;
 		}
 		if( selector.serviceChanged() )
 		{
-			int8_t tempSelector = selector.getState();
-			if( ( tempSelector <= 4 ) && ( tempSelector >= 0) )
-			{
-				//Valid selector
-				selectorPosition = tempSelector;
-				nextState = PNewSelector;
-			}
+			nextState = PIdle;
 		}
 			
 		if( option1Button.serviceRisingEdge() )
@@ -501,6 +586,81 @@ void BenderPanel::tickStateMachine()
 				settings.editing = 1;
 				option1Led.setState( LEDFLASHING );
 			}
+		}
+		if( upButton.serviceRisingEdge() )
+		{
+			if( settings.upperOctave < 3 )
+			{
+				settings.upperOctave++;
+			}
+			switch (selectorPosition)
+			{
+				case 5:
+				sprintf(tempString, "%4d", settings.upperOctave);
+				if( settings.upperOctave > 0 )
+				{
+					tempString[0] = ' ';
+					tempString[1] = '+';
+					tempString[2] = tempString[3];
+					tempString[3] = ' ';					
+				}
+				else if (settings.upperOctave < 0 )
+				{
+					tempString[0] = ' ';
+					tempString[1] = '-';
+					tempString[2] = tempString[3];
+					tempString[3] = ' ';					
+				}
+				else
+				{
+					tempString[0] = ' ';
+					tempString[1] = ' ';
+					tempString[2] = '0';
+					tempString[3] = ' ';					
+				}
+				display.peekThrough( tempString, 2000 );
+				break;
+				default:
+				break;
+			}
+		}
+		if( downButton.serviceRisingEdge() )
+		{
+			if( settings.upperOctave > -3 )
+			{
+				settings.upperOctave--;
+			}
+			switch (selectorPosition)
+			{
+				case 5:
+				sprintf(tempString, "%4d", settings.upperOctave);
+				if( settings.upperOctave > 0 )
+				{
+					tempString[0] = ' ';
+					tempString[1] = '+';
+					tempString[2] = tempString[3];
+					tempString[3] = ' ';					
+				}
+				else if (settings.upperOctave < 0 )
+				{
+					tempString[0] = ' ';
+					tempString[1] = '-';
+					tempString[2] = tempString[3];
+					tempString[3] = ' ';					
+				}
+				else
+				{
+					tempString[0] = ' ';
+					tempString[1] = ' ';
+					tempString[2] = '0';
+					tempString[3] = ' ';					
+				}
+				display.peekThrough( tempString, 2000 );
+				break;
+				default:
+				break;
+			}
+
 		}
         break;
 	case PNewInput:
